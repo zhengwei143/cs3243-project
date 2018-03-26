@@ -6,7 +6,7 @@ public class PlayerSkeleton {
 		bumpinessHeuristic(s);
 		completeLinesHeuristic(s);
 		aggregateHeightHeuristic(s);
-		holesHeuristic(s);
+		holesHeuristic(s.getField());
 		return 0;
 	}
 
