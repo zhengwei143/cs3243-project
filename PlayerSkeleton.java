@@ -5,7 +5,19 @@ public class PlayerSkeleton {
 	public int pickMove(State s, int[][] legalMoves) {
 		bumpinessHeuristic(s);
 		completeLinesHeuristic(s);
+		aggregateHeightHeuristic(s);
 		return 0;
+	}
+
+	public int aggregateHeightHeuristic(State s) {
+		int aggregateHeight = 0;
+		int[] heights = getColumnHeights(s);
+
+		for(int i=0; i<heights.length; i++) {
+			aggregateHeight += heights[i];
+		}
+
+		return aggregateHeight;
 	}
 
 	public int completeLinesHeuristic(State s) {
