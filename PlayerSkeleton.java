@@ -29,23 +29,10 @@ public class PlayerSkeleton {
 
 	public int bumpinessHeuristic(State s){
 		int[][] fields = s.getField();
-		int[] depths = new int[fields[0].length];
-		int depth = 0;
 		int bumpiness = 0;
 		boolean debug = false;
 
-		//if field[i][j] is not 0 then it is empty, else it is occupied by a block
-		for(int j=0; j<fields[0].length; j++){
-			for(int i=fields.length - 1; i>=0; i--){
-				if(fields[i][j] != 0 || i == 0){
-					depths[j] = depth;
-					depth = 0;
-					break;
-				} else { //i=0; continue going deeper
-					depth++;
-				}
-			}
-		}
+		int[] depths = getColumnHeights(s);
 		
 		if(debug){
 			System.out.println("Start Bumpiness Heuristic Printout");
@@ -71,6 +58,25 @@ public class PlayerSkeleton {
 		}
 
 		return bumpiness;
+	}
+
+	//returns an int array of column heights from column 0 to column 9, left to right
+	public int[] getColumnHeights(State s) {
+		int[][] field = s.getField();
+		int[] heights = new int[field[0].length];
+		int maxHeight = field.length;
+
+		//if field[i][j] is not 0 then it is empty, else it is occupied by a block
+		for(int j=0; j<field[j].length; j++) {
+			for(int i=maxHeight; i>0; i--) {
+				if(field[i-1][j] != 0) {
+					heights[j] = i;
+					break;
+				}
+			}
+		}
+
+		return heights;
 	}
 	
 	public static void main(String[] args) {
