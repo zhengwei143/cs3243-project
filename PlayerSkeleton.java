@@ -4,7 +4,27 @@ public class PlayerSkeleton {
 	//implement this function to have a working system
 	public int pickMove(State s, int[][] legalMoves) {
 		bumpinessHeuristic(s);
+		completeLinesHeuristic(s);
 		return 0;
+	}
+
+	public int completeLinesHeuristic(State s) {
+		int[][] field = s.getField();
+		int completeLines = 0;
+
+		for(int i=0; i<field.length; i++) {
+			boolean isComplete = true;
+			for(int j=0; j<field[0].length; j++) {
+				if(field[i][j] == 0) {
+					isComplete = false;
+					break;
+				}
+			}
+			if(isComplete) {
+				completeLines++;
+			}
+		}
+		return completeLines;
 	}
 
 	public int bumpinessHeuristic(State s){
