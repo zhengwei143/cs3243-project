@@ -6,6 +6,7 @@ public class PlayerSkeleton {
 		bumpinessHeuristic(s);
 		completeLinesHeuristic(s);
 		aggregateHeightHeuristic(s);
+		holesHeuristic(s);
 		return 0;
 	}
 
@@ -37,6 +38,27 @@ public class PlayerSkeleton {
 			}
 		}
 		return completeLines;
+	}
+
+	public int holesHeuristic(State s) {
+		int[][] field = s.getField();
+		int numHoles = 0;
+
+		for (int j=0; j<field[j].length; j++) {
+			int startIdx = 0;
+			int endIdx = 0;
+			for(int i=0; i<field.length; i++) {
+				if(field[i][j] != 0) {
+					numHoles += (endIdx - startIdx);
+					startIdx = i+1;
+					endIdx = i+1;
+				} else {
+					endIdx++;
+				}
+			}
+		}
+
+		return numHoles;
 	}
 
 	public int bumpinessHeuristic(State s){
