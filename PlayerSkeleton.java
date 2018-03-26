@@ -40,8 +40,7 @@ public class PlayerSkeleton {
 		return completeLines;
 	}
 
-	public int holesHeuristic(State s) {
-		int[][] field = s.getField();
+	public int holesHeuristic(int[][] field) {
 		int numHoles = 0;
 
 		for (int j=0; j<field[j].length; j++) {
