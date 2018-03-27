@@ -11,10 +11,10 @@ public class PlayerSkeleton {
 	public boolean gameEnded = false;
 	public int rowsCleared;
 	//completeLines, aggregateHeight, bumpiness, holes
-	public double[] heauristicWeights;
+	public double[] heuristicWeights;
 
 	public PlayerSkeleton(double[] hW){
-		heauristicWeights = hW;
+		heuristicWeights = hW;
 	}
 
 	//implement this function to have a working system
@@ -22,7 +22,7 @@ public class PlayerSkeleton {
 		int bestMove = 0;
 		double bestScore = Integer.MIN_VALUE;
 		for (int i = 0; i < legalMoves.length; i++) {
-			double score = 0;
+			double score;
 			gameEnded = false;
 			int[] move = legalMoves[i];
 			int[][] newField = simulateMove(s, move);
@@ -32,7 +32,7 @@ public class PlayerSkeleton {
 			int holes = holesHeuristic(newField);
 			if (!gameEnded) {
 				// TODO: How to weight heuristics?
-				score = heauristicWeights[0]*completeLines + heauristicWeights[1]*aggregateHeight + heauristicWeights[2]*bumpiness + heauristicWeights[3]*holes;
+				score = heuristicWeights[0]*completeLines + heuristicWeights[1]*aggregateHeight + heuristicWeights[2]*bumpiness + heuristicWeights[3]*holes;
 			} else {
 				// TODO: This move results in the game ending, how to handle?
 				score = Integer.MIN_VALUE;
@@ -221,8 +221,8 @@ public class PlayerSkeleton {
 	
 	public static void main(String[] args) {
 		State s = new State();
-		new TFrame(s);
-		PlayerSkeleton p = new PlayerSkeleton(new double[]{760666, -0.510066, -0.184483, -0.5});
+//		new TFrame(s);
+		PlayerSkeleton p = new PlayerSkeleton(new double[]{0.760666, -0.510066, -0.184483, -0.35663});
 		int turnCount = 0;
 		while(!s.hasLost()) {
 			System.out.println("Hello turn num " + turnCount);
@@ -232,13 +232,13 @@ public class PlayerSkeleton {
 //				System.out.println(Arrays.toString(legalMoves[i]));
 //			}
 			s.makeMove(p.pickMove(s,s.legalMoves()));
-			s.draw();
-			s.drawNext(0,0);
-			try {
-				Thread.sleep(300);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
+//			s.draw();
+//			s.drawNext(0,0);
+//			try {
+//				Thread.sleep(300);
+//			} catch (InterruptedException e) {
+//				e.printStackTrace();
+//			}
 			System.out.println("You have completed "+s.getRowsCleared()+" rows.");
 		}
 		System.out.println("Has lost: " + s.hasLost());
