@@ -10,7 +10,13 @@ public class PlayerSkeleton {
 	// Used for each simulated turn
 	public boolean gameEnded = false;
 	public int rowsCleared;
-	
+	//completeLines, aggregateHeight, bumpiness, holes
+	public double[] heauristicWeights;
+
+	public PlayerSkeleton(double[] hW){
+		heauristicWeights = hW;
+	}
+
 	//implement this function to have a working system
 	public int pickMove(State s, int[][] legalMoves) {
 		int bestMove = 0;
@@ -26,7 +32,7 @@ public class PlayerSkeleton {
 			int holes = holesHeuristic(newField);
 			if (!gameEnded) {
 				// TODO: How to weight heuristics?
-				score = 0.760666*completeLines + (-0.510066)*aggregateHeight + (-0.184483)*bumpiness + (-0.5)*holes;
+				score = heauristicWeights[0]*completeLines + heauristicWeights[1]*aggregateHeight + heauristicWeights[2]*bumpiness + heauristicWeights[3]*holes;
 			} else {
 				// TODO: This move results in the game ending, how to handle?
 				score = Integer.MIN_VALUE;
@@ -216,7 +222,7 @@ public class PlayerSkeleton {
 	public static void main(String[] args) {
 		State s = new State();
 		new TFrame(s);
-		PlayerSkeleton p = new PlayerSkeleton();
+		PlayerSkeleton p = new PlayerSkeleton(new double[]{760666, -0.510066, -0.184483, -0.5});
 		int turnCount = 0;
 		while(!s.hasLost()) {
 			System.out.println("Hello turn num " + turnCount);
