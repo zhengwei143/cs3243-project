@@ -15,18 +15,21 @@ public class PlayerSkeleton {
 	public int pickMove(State s, int[][] legalMoves) {
 		int bestMove = 0;
 		double bestScore = Integer.MIN_VALUE;
+		double[] heuristicWeights = [0.760666, -0.510066, -0.184483, -0.8];
 		for (int i = 0; i < legalMoves.length; i++) {
 			double score = 0;
 			gameEnded = false;
 			int[] move = legalMoves[i];
 			int[][] newField = simulateMove(s, move);
-			int bumpiness = bumpinessHeuristic(newField);
+			
+			int bumpinessAndAggregateScore = bumpinessAndAggregateHeightHeuristic(newField, heuristicWeights[2], heuristicWeights[1]);
+
 			int completeLines = rowsCleared;
-			int aggregateHeight = aggregateHeightHeuristic(newField);
+			//int aggregateHeight = aggregateHeightHeuristic(newField);
 			int holes = holesHeuristic(newField);
 			if (!gameEnded) {
 				// TODO: How to weight heuristics?
-				score = 0.760666*completeLines + (-0.510066)*aggregateHeight + (-0.184483)*bumpiness + (-0.5)*holes;
+				score = heuristicWeights[0]*completeLines + bumpinessAndAggregateScore + heuristicWeights[3]*holes;
 			} else {
 				// TODO: This move results in the game ending, how to handle?
 				score = Integer.MIN_VALUE;
@@ -39,19 +42,6 @@ public class PlayerSkeleton {
 		System.out.println("Best Move: " + Arrays.toString(legalMoves[bestMove]));
 		System.out.println("Best Score: " + bestScore);
 		return bestMove;
-	}
-	
-
-
-	public int aggregateHeightHeuristic(int[][] field) {
-		int aggregateHeight = 0;
-		int[] heights = getColumnHeights(field);
-
-		for(int i=0; i<heights.length; i++) {
-			aggregateHeight += heights[i];
-		}
-
-		return aggregateHeight;
 	}
 
 	public int holesHeuristic(int[][] field) {
@@ -74,8 +64,10 @@ public class PlayerSkeleton {
 		return numHoles;
 	}
 
-	public int bumpinessHeuristic(int[][] field){
+	public double bumpinessAndAggregateHeightHeuristic(int[][] field, double bumpinessWeight, double aggregateWeight){
 		int bumpiness = 0;
+		int aggregateHeight = 0;
+
 		boolean debug = false;
 
 		int[] depths = getColumnHeights(field);
@@ -96,6 +88,7 @@ public class PlayerSkeleton {
 		
 		for(int i=0; i<depths.length - 1; i++){
 			//System.out.print(depths[i] + " ");
+			aggregateHeight += heights[i];
 			bumpiness += Math.abs(depths[i] - depths[i+1]);
 		}
 //		if(debug){
@@ -103,7 +96,7 @@ public class PlayerSkeleton {
 //			System.out.println("End Depth Score Printout");	
 //		}
 
-		return bumpiness;
+		return (bumpiness * bumpinessWeight) + (aggregateHeight * aggregateWeight);
 	}
 
 	//returns an int array of column heights from column 0 to column 9, left to right
