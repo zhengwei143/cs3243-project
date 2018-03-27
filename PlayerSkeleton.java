@@ -14,7 +14,7 @@ public class PlayerSkeleton {
 	//implement this function to have a working system
 	public int pickMove(State s, int[][] legalMoves) {
 		int bestMove = 0;
-		double bestScore = -10000;
+		double bestScore = Integer.MIN_VALUE;
 		for (int i = 0; i < legalMoves.length; i++) {
 			double score = 0;
 			gameEnded = false;
@@ -23,12 +23,13 @@ public class PlayerSkeleton {
 			int bumpiness = bumpinessHeuristic(newField);
 			int completeLines = rowsCleared;
 			int aggregateHeight = aggregateHeightHeuristic(newField);
+			int holes = holesHeuristic(newField);
 			if (!gameEnded) {
 				// TODO: How to weight heuristics?
-				score = completeLines + aggregateHeight + bumpiness;				
+				score = 0.760666*completeLines + (-0.510066)*aggregateHeight + (-0.184483)*bumpiness + (-0.5)*holes;
 			} else {
 				// TODO: This move results in the game ending, how to handle?
-				score = 0;
+				score = Integer.MIN_VALUE;
 			}
 			if (score > bestScore) {
 				bestMove = i;
@@ -51,6 +52,26 @@ public class PlayerSkeleton {
 		}
 
 		return aggregateHeight;
+	}
+
+	public int holesHeuristic(int[][] field) {
+		int numHoles = 0;
+
+		for (int j=0; j<field[j].length; j++) {
+			int startIdx = 0;
+			int endIdx = 0;
+			for(int i=0; i<field.length; i++) {
+				if(field[i][j] != 0) {
+					numHoles += (endIdx - startIdx);
+					startIdx = i+1;
+					endIdx = i+1;
+				} else {
+					endIdx++;
+				}
+			}
+		}
+
+		return numHoles;
 	}
 
 	public int bumpinessHeuristic(int[][] field){
@@ -212,6 +233,7 @@ public class PlayerSkeleton {
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
+			System.out.println("You have completed "+s.getRowsCleared()+" rows.");
 		}
 		System.out.println("Has lost: " + s.hasLost());
 		System.out.println("You have completed "+s.getRowsCleared()+" rows.");
