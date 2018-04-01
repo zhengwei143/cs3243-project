@@ -42,8 +42,8 @@ public class PlayerSkeleton {
 				bestScore = score;
 			}
 		}
-		System.out.println("Best Move: " + Arrays.toString(legalMoves[bestMove]));
-		System.out.println("Best Score: " + bestScore);
+//		System.out.println("Best Move: " + Arrays.toString(legalMoves[bestMove]));
+//		System.out.println("Best Score: " + bestScore);
 		return bestMove;
 	}
 	
@@ -245,4 +245,12 @@ public class PlayerSkeleton {
 		System.out.println("You have completed "+s.getRowsCleared()+" rows.");
 	}
 	
+	// Plays the game and returns the number of rows cleared
+	public int playGame() {
+		State s = new State();
+		while(!s.hasLost()) {
+			s.makeMove(pickMove(s, s.legalMoves()));
+		}
+		return s.getRowsCleared();
+	}
 }
