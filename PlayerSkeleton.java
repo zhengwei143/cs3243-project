@@ -3,15 +3,57 @@ import java.util.Arrays;
 public class PlayerSkeleton {
 	public static final int COLS = 10;
 	public static final int ROWS = 21;
+    public static final int N_PIECES = 7;
 	//indices for legalMoves
 	public static final int ORIENT = 0;
 	public static final int SLOT = 1;
-	
-	// Used for each simulated turn
-	public boolean gameEnded = false;
-	public int rowsCleared;
+
 	//completeLines, aggregateHeight, bumpiness, holes
 	public double[] heuristicWeights;
+
+    //possible orientations for a given piece type
+    protected static int[] pOrients = {1,2,4,4,4,2,2};
+
+    //the next several arrays define the piece vocabulary in detail
+    //width of the pieces [piece ID][orientation]
+    protected static int[][] pWidth = {
+            {2},
+            {1,4},
+            {2,3,2,3},
+            {2,3,2,3},
+            {2,3,2,3},
+            {3,2},
+            {3,2}
+    };
+
+    //all legal moves - first index is piece type - then a list of 2-length arrays
+    protected static int[][][] allLegalMoves = new int[N_PIECES][][];
+
+    //initialize legalMoves
+    {
+        //for each piece type
+        for(int i = 0; i < N_PIECES; i++) {
+            //figure number of legal moves
+            int n = 0;
+            for(int j = 0; j < pOrients[i]; j++) {
+                //number of locations in this orientation
+                n += COLS+1-pWidth[i][j];
+            }
+            //allocate space
+            allLegalMoves[i] = new int[n][2];
+            //for each orientation
+            n = 0;
+            for(int j = 0; j < pOrients[i]; j++) {
+                //for each slot
+                for(int k = 0; k < COLS+1-pWidth[i][j];k++) {
+                    allLegalMoves[i][n][ORIENT] = j;
+                    allLegalMoves[i][n][SLOT] = k;
+                    n++;
+                }
+            }
+        }
+
+    }
 
 	public PlayerSkeleton(double[] hW){
 		heuristicWeights = hW;
@@ -19,204 +61,62 @@ public class PlayerSkeleton {
 
 	//implement this function to have a working system
 	public int pickMove(State s, int[][] legalMoves) {
-		int bestMove = 0;
-		double bestScore = Integer.MIN_VALUE;
-		for (int i = 0; i < legalMoves.length; i++) {
-			double score;
-			gameEnded = false;
-			int[] move = legalMoves[i];
-			int[][] newField = simulateMove(s, move);
-			int bumpiness = bumpinessHeuristic(newField);
-			int completeLines = rowsCleared;
-			int aggregateHeight = aggregateHeightHeuristic(newField);
-			int holes = holesHeuristic(newField);
-			if (!gameEnded) {
-				// TODO: How to weight heuristics?
-				score = heuristicWeights[0]*completeLines + heuristicWeights[1]*aggregateHeight + heuristicWeights[2]*bumpiness + heuristicWeights[3]*holes;
-			} else {
-				// TODO: This move results in the game ending, how to handle?
-				score = Integer.MIN_VALUE;
-			}
-			if (score > bestScore) {
-				bestMove = i;
-				bestScore = score;
-			}
-		}
-//		System.out.println("Best Move: " + Arrays.toString(legalMoves[bestMove]));
-//		System.out.println("Best Score: " + bestScore);
+		int bestMove;
+        bestMove = depthTwoSearch(new Node(heuristicWeights, s.getField(), s.getTop(), 0, false), legalMoves, s.getNextPiece());
+		System.out.println("Rows cleared: " + s.getRowsCleared());
 		return bestMove;
 	}
-	
 
+    /**
+     * Assigns a score to each legal move which is the average of optimal scores for every possible piece playable
+     * after the legal move is played.
+     * Optimal score for each piece is obtained by exhaustively searching every orient and position.
+     * Returns the move corresponding to the best average score among legal moves.
+     * ref: http://www.diva-portal.org/smash/get/diva2:815662/FULLTEXT01.pdf
+     * @param s state to apply depth-2 search on
+     * @param legalMoves of the nextPiece
+     * @param nextPiece integer representing the next piece
+     * @return best move to be played at depth-1
+     */
+	public int depthTwoSearch(Node s, int[][] legalMoves, int nextPiece) {
+	    double bestAvg = Integer.MIN_VALUE;
+	    int bestDepthOneMove = 0;
+	    double[] averages = new double[legalMoves.length];
 
-	public int aggregateHeightHeuristic(int[][] field) {
-		int aggregateHeight = 0;
-		int[] heights = getColumnHeights(field);
+	    for(int i = 0; i < legalMoves.length; i++) {
+            Node depthOneNode = s.simulateMove(legalMoves[i], nextPiece);
+            double[] optimalScores = new double[N_PIECES];
+	        for(int j = 0; j < N_PIECES; j++) {
+	            double bestScore = Integer.MIN_VALUE;
+	            for(int k = 0; k < allLegalMoves[j].length; k++) {
+	                Node depthTwoNode = depthOneNode.simulateMove(allLegalMoves[j][k], j);
+	                double newScore = depthTwoNode.getScore();
+	                if (newScore > bestScore) {
+	                    bestScore = newScore;
+                    }
+                }
+                optimalScores[j] = bestScore;
+            }
 
-		for(int i=0; i<heights.length; i++) {
-			aggregateHeight += heights[i];
-		}
+            double avg = 0;
+            for(int l = 0; l < N_PIECES; l++) {
+	            avg += optimalScores[l];
+            }
+            avg /= N_PIECES;
+            averages[i] = avg;
+        }
 
-		return aggregateHeight;
-	}
+        for(int i = 0; i < averages.length; i++) {
+	        if(averages[i] > bestAvg) {
+	            bestAvg = averages[i];
+	            bestDepthOneMove = i;
+            }
+        }
 
-	public int holesHeuristic(int[][] field) {
-		int numHoles = 0;
+        System.out.println("Best Move: " + Arrays.toString(legalMoves[bestDepthOneMove]));
+		System.out.println("Best Score: " + bestAvg);
 
-		for (int j=0; j<field[j].length; j++) {
-			int startIdx = 0;
-			int endIdx = 0;
-			for(int i=0; i<field.length; i++) {
-				if(field[i][j] != 0) {
-					numHoles += (endIdx - startIdx);
-					startIdx = i+1;
-					endIdx = i+1;
-				} else {
-					endIdx++;
-				}
-			}
-		}
-
-		return numHoles;
-	}
-
-	public int bumpinessHeuristic(int[][] field){
-		int bumpiness = 0;
-		boolean debug = false;
-
-		int[] depths = getColumnHeights(field);
-		
-		if(debug){
-			System.out.println("Start Bumpiness Heuristic Printout");
-			for(int i=0; i<field.length; i++){
-				for(int j=0; j<field[i].length; j++){
-					System.out.print(field[i][j]);
-				}
-				System.out.println();
-			}
-			System.out.println("End Bumpiness Heuristic Printout");
-
-
-			System.out.println("Start Depth Score Printout");	
-		}
-		
-		for(int i=0; i<depths.length - 1; i++){
-			//System.out.print(depths[i] + " ");
-			bumpiness += Math.abs(depths[i] - depths[i+1]);
-		}
-//		if(debug){
-//			System.out.println("Bumpiness is " + bumpiness);
-//			System.out.println("End Depth Score Printout");	
-//		}
-
-		return bumpiness;
-	}
-
-	//returns an int array of column heights from column 0 to column 9, left to right
-	public int[] getColumnHeights(int[][] field) {
-		int[] heights = new int[field[0].length];
-		int maxHeight = field.length;
-
-		//if field[i][j] is not 0 then it is empty, else it is occupied by a block
-		for(int j=0; j<field[j].length; j++) {
-			for(int i=maxHeight; i>0; i--) {
-				if(field[i-1][j] != 0) {
-					heights[j] = i;
-					break;
-				}
-			}
-		}
-
-		return heights;
-	}
-	
-	// Similar logic to makeMove() in State, simulates a single move based on an original state
-	// @param s - original state
-	// @param move - move to simulate
-	// @return field - a duplicated field with the new outcome based on the move
-	public int[][] simulateMove(State s, int[] move) {
-		int[][] originalField = s.getField();
-		int[] originalTop = s.getTop();
-		int[][] pWidth = State.getpWidth();
-		int[][] pHeight = State.getpHeight();
-		int[][][] pBottom = State.getpBottom();
-		int[][][] pTop = State.getpTop();
-		int nextPiece = s.getNextPiece();
-		int turn = s.getTurnNumber();
-		int orient = move[ORIENT];
-		int slot = move[SLOT];
-		
-		// Copy into a new field and top array
-		// Otherwise it will refer to the same field, top arrays for each simulation
-		int[][] field = new int[ROWS][COLS];
-		int[] top = new int[COLS];
-		for (int i = 0; i < ROWS; i++) {
-			for (int j = 0; j < COLS; j++) {
-				field[i][j] = originalField[i][j];
-			}
-		}
-		for (int i = 0; i < COLS; i++) {
-			top[i] = originalTop[i];
-		}
-		
-		//height if the first column makes contact
-		int height = top[slot]-pBottom[nextPiece][orient][0];
-		//for each column beyond the first in the piece
-		for(int c = 1; c < pWidth[nextPiece][orient];c++) {
-			height = Math.max(height,top[slot+c]-pBottom[nextPiece][orient][c]);
-		}
-		
-		//check if game ended
-		if(height+pHeight[nextPiece][orient] >= ROWS) {
-			gameEnded = true;
-			return field;
-		}
-
-		
-		//for each column in the piece - fill in the appropriate blocks
-		for(int i = 0; i < pWidth[nextPiece][orient]; i++) {
-			
-			//from bottom to top of brick
-			for(int h = height+pBottom[nextPiece][orient][i]; h < height+pTop[nextPiece][orient][i]; h++) {
-				field[h][i+slot] = turn;
-			}
-		}
-		
-		//adjust top
-		for(int c = 0; c < pWidth[nextPiece][orient]; c++) {
-			top[slot+c]=height+pTop[nextPiece][orient][c];
-		}
-		
-		rowsCleared = 0;
-		
-		//check for full rows - starting at the top
-		for(int r = height+pHeight[nextPiece][orient]-1; r >= height; r--) {
-			//check all columns in the row
-			boolean full = true;
-			for(int c = 0; c < COLS; c++) {
-				if(field[r][c] == 0) {
-					full = false;
-					break;
-				}
-			}
-			//if the row was full - remove it and slide above stuff down
-			if(full) {
-				rowsCleared++;
-				//for each column
-				for(int c = 0; c < COLS; c++) {
-
-					//slide down all bricks
-					for(int i = r; i < top[c]; i++) {
-						field[i][c] = field[i+1][c];
-					}
-					//lower the top
-					top[c]--;
-					while(top[c]>=1 && field[top[c]-1][c]==0)	top[c]--;
-				}
-			}
-		}
-
-		return field;
+		return bestDepthOneMove;
 	}
 	
 	public static void main(String[] args) {
@@ -253,4 +153,251 @@ public class PlayerSkeleton {
 		}
 		return s.getRowsCleared();
 	}
+}
+
+class Node {
+    public static final int COLS = 10;
+    public static final int ROWS = 21;
+    //indices for legalMoves
+    public static final int ORIENT = 0;
+    public static final int SLOT = 1;
+
+    private boolean gameEnded;
+    private int[][] originalField;
+    private int[] originalTop;
+    private double score;
+
+    //completeLines, aggregateHeight, bumpiness, holes
+    public double[] heuristicWeights;
+
+    //the next several arrays define the piece vocabulary in detail
+    //width of the pieces [piece ID][orientation]
+    protected static int[][] pWidth = {
+            {2},
+            {1,4},
+            {2,3,2,3},
+            {2,3,2,3},
+            {2,3,2,3},
+            {3,2},
+            {3,2}
+    };
+    //height of the pieces [piece ID][orientation]
+    private static int[][] pHeight = {
+            {2},
+            {4,1},
+            {3,2,3,2},
+            {3,2,3,2},
+            {3,2,3,2},
+            {2,3},
+            {2,3}
+    };
+    private static int[][][] pBottom = {
+            {{0,0}},
+            {{0},{0,0,0,0}},
+            {{0,0},{0,1,1},{2,0},{0,0,0}},
+            {{0,0},{0,0,0},{0,2},{1,1,0}},
+            {{0,1},{1,0,1},{1,0},{0,0,0}},
+            {{0,0,1},{1,0}},
+            {{1,0,0},{0,1}}
+    };
+    private static int[][][] pTop = {
+            {{2,2}},
+            {{4},{1,1,1,1}},
+            {{3,1},{2,2,2},{3,3},{1,1,2}},
+            {{1,3},{2,1,1},{3,3},{2,2,2}},
+            {{3,2},{2,2,2},{2,3},{1,2,1}},
+            {{1,2,2},{3,2}},
+            {{2,2,1},{2,3}}
+    };
+
+    public Node(double[] hW, int[][] originalField, int[] originalTop, int rowsCleared, boolean gameEnded) {
+        this.heuristicWeights = hW;
+        this.originalField = originalField;
+        this.originalTop = originalTop;
+        this.gameEnded = gameEnded;
+
+        calculateScore(rowsCleared);
+    }
+
+    // Similar logic to makeMove() in State, simulates a single move based on an original state
+    // @param s - original state
+    // @param move - move to simulate
+    // @return field - a duplicated field with the new outcome based on the move
+    public Node simulateMove(int[] move, int nextPiece) {
+        int turn = 1;
+        int orient = move[ORIENT];
+        int slot = move[SLOT];
+        boolean hasGameEnded = gameEnded;
+
+        // Copy into a new field and top array
+        // Otherwise it will refer to the same field, top arrays for each simulation
+        int[][] field = new int[ROWS][COLS];
+        int[] top = new int[COLS];
+        for (int i = 0; i < ROWS; i++) {
+            for (int j = 0; j < COLS; j++) {
+                field[i][j] = originalField[i][j];
+            }
+        }
+        for (int i = 0; i < COLS; i++) {
+            top[i] = originalTop[i];
+        }
+
+        //height if the first column makes contact
+        int height = top[slot]-pBottom[nextPiece][orient][0];
+        //for each column beyond the first in the piece
+        for(int c = 1; c < pWidth[nextPiece][orient];c++) {
+            height = Math.max(height,top[slot+c]-pBottom[nextPiece][orient][c]);
+        }
+
+        //check if game ended
+        if(height+pHeight[nextPiece][orient] >= ROWS) {
+            hasGameEnded = true;
+            return new Node(heuristicWeights, field, top, 0, hasGameEnded);
+        }
+
+
+        //for each column in the piece - fill in the appropriate blocks
+        for(int i = 0; i < pWidth[nextPiece][orient]; i++) {
+
+            //from bottom to top of brick
+            for(int h = height+pBottom[nextPiece][orient][i]; h < height+pTop[nextPiece][orient][i]; h++) {
+                field[h][i+slot] = turn;
+            }
+        }
+
+        //adjust top
+        for(int c = 0; c < pWidth[nextPiece][orient]; c++) {
+            top[slot+c]=height+pTop[nextPiece][orient][c];
+        }
+
+        int linesCompleted = 0;
+
+        //check for full rows - starting at the top
+        for(int r = height+pHeight[nextPiece][orient]-1; r >= height; r--) {
+            //check all columns in the row
+            boolean full = true;
+            for(int c = 0; c < COLS; c++) {
+                if(field[r][c] == 0) {
+                    full = false;
+                    break;
+                }
+            }
+            //if the row was full - remove it and slide above stuff down
+            if(full) {
+                linesCompleted++;
+                //for each column
+                for(int c = 0; c < COLS; c++) {
+
+                    //slide down all bricks
+                    for(int i = r; i < top[c]; i++) {
+                        field[i][c] = field[i+1][c];
+                    }
+                    //lower the top
+                    top[c]--;
+                    while(top[c]>=1 && field[top[c]-1][c]==0)	top[c]--;
+                }
+            }
+        }
+
+        return new Node(heuristicWeights, field, top, linesCompleted, hasGameEnded);
+    }
+
+    //Must call simulateMove before calling this method
+    public void calculateScore(int rowsCleared) {
+        int bumpiness = bumpinessHeuristic(originalField);
+        int completeLines = rowsCleared;
+        int aggregateHeight = aggregateHeightHeuristic(originalField);
+        int holes = holesHeuristic(originalField);
+        if (!gameEnded) {
+            score = heuristicWeights[0] * completeLines + heuristicWeights[1] * aggregateHeight + heuristicWeights[2] * bumpiness + heuristicWeights[3] * holes;
+        } else {
+            score = Integer.MIN_VALUE;
+        }
+    }
+
+    public int aggregateHeightHeuristic(int[][] field) {
+        int aggregateHeight = 0;
+        int[] heights = getColumnHeights(field);
+
+        for(int i=0; i<heights.length; i++) {
+            aggregateHeight += heights[i];
+        }
+
+        return aggregateHeight;
+    }
+
+    public int holesHeuristic(int[][] field) {
+        int numHoles = 0;
+
+        for (int j=0; j<field[j].length; j++) {
+            int startIdx = 0;
+            int endIdx = 0;
+            for(int i=0; i<field.length; i++) {
+                if(field[i][j] != 0) {
+                    numHoles += (endIdx - startIdx);
+                    startIdx = i+1;
+                    endIdx = i+1;
+                } else {
+                    endIdx++;
+                }
+            }
+        }
+
+        return numHoles;
+    }
+
+    public int bumpinessHeuristic(int[][] field){
+        int bumpiness = 0;
+        boolean debug = false;
+
+        int[] depths = getColumnHeights(field);
+
+        if(debug){
+            System.out.println("Start Bumpiness Heuristic Printout");
+            for(int i=0; i<field.length; i++){
+                for(int j=0; j<field[i].length; j++){
+                    System.out.print(field[i][j]);
+                }
+                System.out.println();
+            }
+            System.out.println("End Bumpiness Heuristic Printout");
+
+
+            System.out.println("Start Depth Score Printout");
+        }
+
+        for(int i=0; i<depths.length - 1; i++){
+            //System.out.print(depths[i] + " ");
+            bumpiness += Math.abs(depths[i] - depths[i+1]);
+        }
+//		if(debug){
+//			System.out.println("Bumpiness is " + bumpiness);
+//			System.out.println("End Depth Score Printout");
+//		}
+
+        return bumpiness;
+    }
+
+    //returns an int array of column heights from column 0 to column 9, left to right
+    public int[] getColumnHeights(int[][] field) {
+        int[] heights = new int[field[0].length];
+        int maxHeight = field.length;
+
+        //if field[i][j] is not 0 then it is empty, else it is occupied by a block
+        for(int j=0; j<field[j].length; j++) {
+            for(int i=maxHeight; i>0; i--) {
+                if(field[i-1][j] != 0) {
+                    heights[j] = i;
+                    break;
+                }
+            }
+        }
+
+        return heights;
+    }
+
+    public double getScore() {
+        return score;
+    }
+
 }
