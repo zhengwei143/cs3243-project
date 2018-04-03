@@ -1,15 +1,15 @@
 import java.util.Arrays;
 
 public class PlayerSkeleton {
-	public static final int COLS = 10;
-	public static final int ROWS = 21;
+    public static final int COLS = 10;
+    public static final int ROWS = 21;
     public static final int N_PIECES = 7;
-	//indices for legalMoves
-	public static final int ORIENT = 0;
-	public static final int SLOT = 1;
+    //indices for legalMoves
+    public static final int ORIENT = 0;
+    public static final int SLOT = 1;
 
-	//completeLines, aggregateHeight, bumpiness, holes
-	public double[] heuristicWeights;
+    //completeLines, aggregateHeight, bumpiness, holes
+    public double[] heuristicWeights;
 
     //possible orientations for a given piece type
     protected static int[] pOrients = {1,2,4,4,4,2,2};
@@ -55,17 +55,17 @@ public class PlayerSkeleton {
 
     }
 
-	public PlayerSkeleton(double[] hW){
-		heuristicWeights = hW;
-	}
+    public PlayerSkeleton(double[] hW){
+        heuristicWeights = hW;
+    }
 
-	//implement this function to have a working system
-	public int pickMove(State s, int[][] legalMoves) {
-		int bestMove;
+    //implement this function to have a working system
+    public int pickMove(State s, int[][] legalMoves) {
+        int bestMove;
         bestMove = depthTwoSearch(new Node(heuristicWeights, s.getField(), s.getTop(), 0, false), legalMoves, s.getNextPiece());
-		System.out.println("Rows cleared: " + s.getRowsCleared());
-		return bestMove;
-	}
+        System.out.println("Rows cleared: " + s.getRowsCleared());
+        return bestMove;
+    }
 
     /**
      * Assigns a score to each legal move which is the average of optimal scores for every possible piece playable
@@ -78,21 +78,21 @@ public class PlayerSkeleton {
      * @param nextPiece integer representing the next piece
      * @return best move to be played at depth-1
      */
-	public int depthTwoSearch(Node s, int[][] legalMoves, int nextPiece) {
-	    double bestAvg = Integer.MIN_VALUE;
-	    int bestDepthOneMove = 0;
-	    double[] averages = new double[legalMoves.length];
+    public int depthTwoSearch(Node s, int[][] legalMoves, int nextPiece) {
+        double bestAvg = Integer.MIN_VALUE;
+        int bestDepthOneMove = 0;
+        double[] averages = new double[legalMoves.length];
 
-	    for(int i = 0; i < legalMoves.length; i++) {
+        for(int i = 0; i < legalMoves.length; i++) {
             Node depthOneNode = s.simulateMove(legalMoves[i], nextPiece);
             double[] optimalScores = new double[N_PIECES];
-	        for(int j = 0; j < N_PIECES; j++) {
-	            double bestScore = Integer.MIN_VALUE;
-	            for(int k = 0; k < allLegalMoves[j].length; k++) {
-	                Node depthTwoNode = depthOneNode.simulateMove(allLegalMoves[j][k], j);
-	                double newScore = depthTwoNode.getScore();
-	                if (newScore > bestScore) {
-	                    bestScore = newScore;
+            for(int j = 0; j < N_PIECES; j++) {
+                double bestScore = Integer.MIN_VALUE;
+                for(int k = 0; k < allLegalMoves[j].length; k++) {
+                    Node depthTwoNode = depthOneNode.simulateMove(allLegalMoves[j][k], j);
+                    double newScore = depthTwoNode.getScore();
+                    if (newScore > bestScore) {
+                        bestScore = newScore;
                     }
                 }
                 optimalScores[j] = bestScore;
@@ -100,38 +100,38 @@ public class PlayerSkeleton {
 
             double avg = 0;
             for(int l = 0; l < N_PIECES; l++) {
-	            avg += optimalScores[l];
+                avg += optimalScores[l];
             }
             avg /= N_PIECES;
             averages[i] = avg;
         }
 
         for(int i = 0; i < averages.length; i++) {
-	        if(averages[i] > bestAvg) {
-	            bestAvg = averages[i];
-	            bestDepthOneMove = i;
+            if(averages[i] > bestAvg) {
+                bestAvg = averages[i];
+                bestDepthOneMove = i;
             }
         }
 
         System.out.println("Best Move: " + Arrays.toString(legalMoves[bestDepthOneMove]));
-		System.out.println("Best Score: " + bestAvg);
+        System.out.println("Best Score: " + bestAvg);
 
-		return bestDepthOneMove;
-	}
-	
-	public static void main(String[] args) {
-		State s = new State();
+        return bestDepthOneMove;
+    }
+
+    public static void main(String[] args) {
+        State s = new State();
 //		new TFrame(s);
-		PlayerSkeleton p = new PlayerSkeleton(new double[]{0.760666, -0.510066, -0.184483, -0.35663});
-		int turnCount = 0;
-		while(!s.hasLost()) {
-			System.out.println("Hello turn num " + turnCount);
-			turnCount++;
+        PlayerSkeleton p = new PlayerSkeleton(new double[]{0.760666, -0.510066, -0.184483, -0.35663});
+        int turnCount = 0;
+        while(!s.hasLost()) {
+            System.out.println("Hello turn num " + turnCount);
+            turnCount++;
 //			int[][] legalMoves = s.legalMoves();
 //			for (int i = 0; i < legalMoves.length; i++) {
 //				System.out.println(Arrays.toString(legalMoves[i]));
 //			}
-			s.makeMove(p.pickMove(s,s.legalMoves()));
+            s.makeMove(p.pickMove(s,s.legalMoves()));
 //			s.draw();
 //			s.drawNext(0,0);
 //			try {
@@ -139,20 +139,20 @@ public class PlayerSkeleton {
 //			} catch (InterruptedException e) {
 //				e.printStackTrace();
 //			}
-			System.out.println("You have completed "+s.getRowsCleared()+" rows.");
-		}
-		System.out.println("Has lost: " + s.hasLost());
-		System.out.println("You have completed "+s.getRowsCleared()+" rows.");
-	}
-	
-	// Plays the game and returns the number of rows cleared
-	public int playGame() {
-		State s = new State();
-		while(!s.hasLost()) {
-			s.makeMove(pickMove(s, s.legalMoves()));
-		}
-		return s.getRowsCleared();
-	}
+            System.out.println("You have completed "+s.getRowsCleared()+" rows.");
+        }
+        System.out.println("Has lost: " + s.hasLost());
+        System.out.println("You have completed "+s.getRowsCleared()+" rows.");
+    }
+
+    // Plays the game and returns the number of rows cleared
+    public int playGame() {
+        State s = new State();
+        while(!s.hasLost()) {
+            s.makeMove(pickMove(s, s.legalMoves()));
+        }
+        return s.getRowsCleared();
+    }
 }
 
 class Node {
