@@ -63,7 +63,6 @@ public class PlayerSkeleton {
 	public int pickMove(State s, int[][] legalMoves) {
 		int bestMove;
 		bestMove = depthTwoSearch(new Node(heuristicWeights, s.getField(), s.getTop(), 0, false), legalMoves, s.getNextPiece());
-		System.out.println("Rows cleared: " + s.getRowsCleared());
 		return bestMove;
 	}
 
