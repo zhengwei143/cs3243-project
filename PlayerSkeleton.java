@@ -112,8 +112,8 @@ public class PlayerSkeleton {
 			}
 		}
 
-		System.out.println("Best Move: " + Arrays.toString(legalMoves[bestDepthOneMove]));
-		System.out.println("Best Score: " + bestAvg);
+//		System.out.println("Best Move: " + Arrays.toString(legalMoves[bestDepthOneMove]));
+//		System.out.println("Best Score: " + bestAvg);
 
 		return bestDepthOneMove;
 	}

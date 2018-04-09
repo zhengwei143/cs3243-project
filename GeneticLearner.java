@@ -1,4 +1,7 @@
 import java.util.*;
+import java.io.PrintWriter;
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 
 public class GeneticLearner {
 	
@@ -7,23 +10,36 @@ public class GeneticLearner {
 		double cutoff = 0.3;
 		int numGenerations = 0;
 		int cutoffGenerations = 50;
-		
-		Population p = new Population(initialSize);
-		
-		// Run this for a fixed number (cutoffGenerations) of generations
-		while(numGenerations < cutoffGenerations) {
-			// A single generation producing offspring
-			while(p.offspringProduced < initialSize*cutoff) {
-				p.crossover();
+		try {
+			Timestamp timestamp = new Timestamp(System.currentTimeMillis());
+			String filename = new SimpleDateFormat("yyyyMMddHHmmss").format(timestamp) + ".txt";
+			String folder = "results/";
+
+			PrintWriter writer = new PrintWriter(folder + filename);
+
+			Population p = new Population(initialSize, writer);
+			
+			// Run this for a fixed number (cutoffGenerations) of generations
+			while(numGenerations < cutoffGenerations) {
+				// A single generation producing offspring
+				while(p.offspringProduced < initialSize*cutoff) {
+					p.crossover();
+				}
+				
+				writer.print("Generation " + (numGenerations+1) + ": ");
+				p.getFittest();
+				
+				// Once this generation produces a certain percentage of offspring, purge the population
+				p.purge();
+				numGenerations++;
 			}
 			
-			System.out.print("Generation " + (numGenerations+1) + ": ");
-			p.getFittest();
-			
-			// Once this generation produces a certain percentage of offspring, purge the population
-			p.purge();
-			numGenerations++;
+			writer.close();
+		} catch (Exception e) {
+			System.out.println("error: " + e);
 		}
+		
+
 	}
 
 }
@@ -33,6 +49,7 @@ class Population {
 	public int originalSize;
 	public int offspringProduced;
 	public PriorityQueue<Vector> vectors;
+	public PrintWriter writer;
 	Comparator<Vector> comparator = new Comparator<Vector>() {
 		public int compare(Vector a, Vector b) {
 			return Integer.compare(b.fitness, a.fitness); 
@@ -44,9 +61,9 @@ class Population {
 	 * 	- Creates the given number of vectors and calculates their fitness
 	 *  - Adds the vectors into the max heap of vectors (by fitness)
 	 */
-	public Population(int populationSize) {
+	public Population(int populationSize, PrintWriter out) {
 		originalSize = populationSize;
-		
+		writer = out;
 		vectors = new PriorityQueue<Vector>(populationSize, comparator);
 		
 		for (int i = 0; i < populationSize; i++) {
@@ -55,7 +72,7 @@ class Population {
 		}
 		
 		offspringProduced = 0;
-		System.out.println("Initial population created.");
+//		System.out.println("Initial population created.");
 	}
 
 	/**
@@ -146,7 +163,7 @@ class Population {
 	 */
 	public int getFittest() {
 		Vector v = vectors.peek();
-		System.out.print(Arrays.toString(v.weights) + ", fitness: " + v.fitness + "\n");
+		writer.print(Arrays.toString(v.weights) + ", fitness: " + v.fitness + "\n");
 		return v.fitness;
 	}
 }
