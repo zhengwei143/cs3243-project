@@ -9,7 +9,7 @@ public class GeneticLearner {
 		int initialSize = 1000;
 		double cutoff = 0.3;
 		int numGenerations = 0;
-		int cutoffGenerations = 50;
+		int cutoffGenerations = 200;
 		try {
 			Timestamp timestamp = new Timestamp(System.currentTimeMillis());
 			String filename = new SimpleDateFormat("yyyyMMddHHmmss").format(timestamp) + ".txt";
@@ -26,11 +26,16 @@ public class GeneticLearner {
 					p.crossover();
 				}
 				
+				System.out.print("Generation " + (numGenerations+1) + ": ");
 				writer.print("Generation " + (numGenerations+1) + ": ");
 				p.getFittest();
 				
 				// Once this generation produces a certain percentage of offspring, purge the population
+				writer.print("Purging weakest of current population...");
+				System.out.print("Purging weakest of current population...");
 				p.purge();
+				writer.print("Done.\n");
+				System.out.print("Done.\n");
 				numGenerations++;
 			}
 			
@@ -63,16 +68,23 @@ class Population {
 	 */
 	public Population(int populationSize, PrintWriter out) {
 		originalSize = populationSize;
+		int checkpoint = populationSize/10;
 		writer = out;
 		vectors = new PriorityQueue<Vector>(populationSize, comparator);
-		
+		System.out.println("Initializing population...");
+		writer.println("Initializing population...");
 		for (int i = 0; i < populationSize; i++) {
+			if ((i+1) % checkpoint == 0) {
+				System.out.print("..." + ((i+1)/populationSize) + "%");
+				writer.print("..." + ((i+1)/populationSize) + "%");
+			}
 			Vector v = new Vector();
 			vectors.add(v);
 		}
 		
 		offspringProduced = 0;
-//		System.out.println("Initial population created.");
+		writer.print("Initial population created");
+		System.out.println("Initial population created.");
 	}
 
 	/**
@@ -84,7 +96,7 @@ class Population {
 	 */
 	public void crossover() {
 		PriorityQueue<Vector> sample = samplePopulation();
-
+		
 		// Takes the 2 fittest vectors
 		Vector a = sample.poll();
 		Vector b = sample.poll();
@@ -163,6 +175,7 @@ class Population {
 	 */
 	public int getFittest() {
 		Vector v = vectors.peek();
+		System.out.print(Arrays.toString(v.weights) + ", fitness: " + v.fitness + "\n");
 		writer.print(Arrays.toString(v.weights) + ", fitness: " + v.fitness + "\n");
 		return v.fitness;
 	}
