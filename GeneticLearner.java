@@ -21,20 +21,21 @@ public class GeneticLearner {
 			
 			// Run this for a fixed number (cutoffGenerations) of generations
 			while(numGenerations < cutoffGenerations) {
+				
 				// A single generation producing offspring
 				while(p.offspringProduced < initialSize*cutoff) {
 					p.crossover();
 				}
 				
 				System.out.print("Generation " + (numGenerations+1) + ": ");
-				writer.print("Generation " + (numGenerations+1) + ": ");
+//				writer.print("Generation " + (numGenerations+1) + ": ");
 				p.getFittest();
 				
 				// Once this generation produces a certain percentage of offspring, purge the population
-				writer.print("Purging weakest of current population...");
+//				writer.print("Purging weakest of current population...");
 				System.out.print("Purging weakest of current population...");
 				p.purge();
-				writer.print("Done.\n");
+//				writer.print("Done.\n");
 				System.out.print("Done.\n");
 				numGenerations++;
 			}
@@ -68,23 +69,24 @@ class Population {
 	 */
 	public Population(int populationSize, PrintWriter out) {
 		originalSize = populationSize;
-		int checkpoint = populationSize/10;
+		int checkpointSize = 10;
+		int checkpoint = populationSize/checkpointSize;
 		writer = out;
 		vectors = new PriorityQueue<Vector>(populationSize, comparator);
 		System.out.println("Initializing population...");
-		writer.println("Initializing population...");
+//		writer.println("Initializing population...");
 		for (int i = 0; i < populationSize; i++) {
 			if ((i+1) % checkpoint == 0) {
-				System.out.print("..." + ((i+1)/populationSize) + "%");
-				writer.print("..." + ((i+1)/populationSize) + "%");
+				System.out.print("..." + ((i+1)*100/populationSize) + "%");
+//				writer.print("..." + ((i+1)/populationSize) + "%");
 			}
 			Vector v = new Vector();
 			vectors.add(v);
 		}
 		
 		offspringProduced = 0;
-		writer.print("Initial population created");
-		System.out.println("Initial population created.");
+//		writer.print("\nInitial population created");
+		System.out.println("\nInitial population created.");
 	}
 
 	/**
@@ -176,7 +178,7 @@ class Population {
 	public int getFittest() {
 		Vector v = vectors.peek();
 		System.out.print(Arrays.toString(v.weights) + ", fitness: " + v.fitness + "\n");
-		writer.print(Arrays.toString(v.weights) + ", fitness: " + v.fitness + "\n");
+//		writer.print(Arrays.toString(v.weights) + ", fitness: " + v.fitness + "\n");
 		return v.fitness;
 	}
 }

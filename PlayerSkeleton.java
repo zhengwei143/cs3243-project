@@ -150,6 +150,7 @@ public class PlayerSkeleton {
 		while(!s.hasLost()) {
 			s.makeMove(pickMove(s, s.legalMoves()));
 		}
+//		System.out.println("Game completed: " + s.getRowsCleared());
 		return s.getRowsCleared();
 	}
 }
