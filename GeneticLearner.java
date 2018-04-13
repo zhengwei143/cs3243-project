@@ -1,7 +1,5 @@
 import java.util.*;
-import java.io.PrintWriter;
-import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
+import java.util.concurrent.CountDownLatch;
 
 public class GeneticLearner {
 	
@@ -10,15 +8,16 @@ public class GeneticLearner {
 		double cutoff = 0.3;
 		int numGenerations = 0;
 		int cutoffGenerations = 200;
+		
+		StopWatch sw = new StopWatch();
+		
 		try {
-			Timestamp timestamp = new Timestamp(System.currentTimeMillis());
-			String filename = new SimpleDateFormat("yyyyMMddHHmmss").format(timestamp) + ".txt";
-			String folder = "results/";
-
-			PrintWriter writer = new PrintWriter(folder + filename);
-
-			Population p = new Population(initialSize, writer);
-			
+			sw.start();
+			Population p = new Population(initialSize);
+			System.out.println("------------------------------------------------------");
+			System.out.println("PROFILE: Population created in " + sw.getTime() + "ms");
+			System.out.println("------------------------------------------------------");
+			sw.start();
 			// Run this for a fixed number (cutoffGenerations) of generations
 			while(numGenerations < cutoffGenerations) {
 				
@@ -26,21 +25,24 @@ public class GeneticLearner {
 				while(p.offspringProduced < initialSize*cutoff) {
 					p.crossover();
 				}
-				
+
+				System.out.println("---------------GENERATION PROFILE------------------");
 				System.out.print("Generation " + (numGenerations+1) + ": ");
-//				writer.print("Generation " + (numGenerations+1) + ": ");
 				p.getFittest();
 				
 				// Once this generation produces a certain percentage of offspring, purge the population
-//				writer.print("Purging weakest of current population...");
-				System.out.print("Purging weakest of current population...");
 				p.purge();
-//				writer.print("Done.\n");
-				System.out.print("Done.\n");
+				
+
+				p.profile();
+				System.out.println("Total time elapsed: " + sw.getTime());
+				System.out.println("---------------------------------------------------");
+				
 				numGenerations++;
 			}
 			
-			writer.close();
+			
+			
 		} catch (Exception e) {
 			System.out.println("error: " + e);
 		}
@@ -54,11 +56,17 @@ class Population {
 	public static final int HEURISTICS = 4;
 	public int originalSize;
 	public int offspringProduced;
-	public PriorityQueue<Vector> vectors;
-	public PrintWriter writer;
-	Comparator<Vector> comparator = new Comparator<Vector>() {
-		public int compare(Vector a, Vector b) {
-			return Integer.compare(b.fitness, a.fitness); 
+	public PriorityQueue<WeightVector> vectors;
+	
+	// Used to profile each generation
+	public StopWatch purgeClock;
+	public StopWatch sampleClock;
+	public StopWatch crossClock;
+	
+	
+	Comparator<WeightVector> comparator = new Comparator<WeightVector>() {
+		public int compare(WeightVector a, WeightVector b) {
+			return Double.compare(b.fitness, a.fitness);
 		}
 	};
 	
@@ -67,26 +75,28 @@ class Population {
 	 * 	- Creates the given number of vectors and calculates their fitness
 	 *  - Adds the vectors into the max heap of vectors (by fitness)
 	 */
-	public Population(int populationSize, PrintWriter out) {
+	public Population(int populationSize) {
 		originalSize = populationSize;
 		int checkpointSize = 10;
 		int checkpoint = populationSize/checkpointSize;
-		writer = out;
-		vectors = new PriorityQueue<Vector>(populationSize, comparator);
+		vectors = new PriorityQueue<WeightVector>(populationSize, comparator);
 		System.out.println("Initializing population...");
-//		writer.println("Initializing population...");
 		for (int i = 0; i < populationSize; i++) {
 			if ((i+1) % checkpoint == 0) {
-				System.out.print("..." + ((i+1)*100/populationSize) + "%");
-//				writer.print("..." + ((i+1)/populationSize) + "%");
+				System.out.println("..." + ((i+1)*100/populationSize) + "%");
+				System.out.print("Current best: ");
+				getFittest();
 			}
-			Vector v = new Vector();
+			WeightVector v = new WeightVector();
 			vectors.add(v);
 		}
 		
 		offspringProduced = 0;
-//		writer.print("\nInitial population created");
 		System.out.println("\nInitial population created.");
+		
+		purgeClock = new StopWatch();
+		sampleClock = new StopWatch();
+		crossClock = new StopWatch();
 	}
 
 	/**
@@ -97,11 +107,12 @@ class Population {
 	 * Adds this new vector into the population
 	 */
 	public void crossover() {
-		PriorityQueue<Vector> sample = samplePopulation();
+		PriorityQueue<WeightVector> sample = samplePopulation();
 		
+		crossClock.start();
 		// Takes the 2 fittest vectors
-		Vector a = sample.poll();
-		Vector b = sample.poll();
+		WeightVector a = sample.poll();
+		WeightVector b = sample.poll();
 		if (a == null || b == null) {
 			return;
 		}
@@ -111,8 +122,9 @@ class Population {
 			newWeights[i] = a.weights[i]*a.fitness + b.weights[i]*b.fitness;
 		}
 
-		Vector v = new Vector(newWeights);
-		
+		WeightVector v = new WeightVector(newWeights);
+		crossClock.clock();
+//		System.out.println("crossover: " + Arrays.toString(v.weights) + ", fitness: " + v.fitness);
 		addOffspring(v);
 	}
 	
@@ -120,7 +132,7 @@ class Population {
 	 * Adds a new vector to the population
 	 * Increments the number of offspring produced
 	 */
-	public void addOffspring(Vector v) {
+	public void addOffspring(WeightVector v) {
 		vectors.add(v);
 		offspringProduced += 1;
 	}
@@ -130,20 +142,23 @@ class Population {
 	/**
 	 * Return a max heap with a sample of 10% of the current population
 	 */
-	public PriorityQueue<Vector> samplePopulation() {
+	public PriorityQueue<WeightVector> samplePopulation() {
+		sampleClock.start();
 		int sampleSize = new Double(originalSize*sampleProp).intValue();
-		PriorityQueue<Vector> sample = new PriorityQueue<Vector>(sampleSize, comparator);
-		Vector[] p = new Vector[sampleSize];
-		p = vectors.toArray(new Vector[sampleSize]);
-		List<Vector> population = Arrays.asList(p);
+		PriorityQueue<WeightVector> sample = new PriorityQueue<WeightVector>(sampleSize, comparator);
+		
+		WeightVector[] p = new WeightVector[sampleSize];
+		p = vectors.toArray(new WeightVector[sampleSize]);
+		List<WeightVector> population = Arrays.asList(p);
 		// Shuffles the population to simulate randomness in selection
 		Collections.shuffle(population);
 
 		for (int i = 0; i < sampleSize; i++) {
-			Vector v = population.get(i);
+			WeightVector v = population.get(i);
 			sample.add(v);
 		}
 		
+		sampleClock.clock();
 		return sample;
 		
 	}
@@ -162,7 +177,8 @@ class Population {
 	 * Resets the number of offspring produced to 0.
 	 */
 	public void purge() {
-		PriorityQueue<Vector> q = new PriorityQueue<Vector>(originalSize, comparator);
+		purgeClock.start();
+		PriorityQueue<WeightVector> q = new PriorityQueue<WeightVector>(originalSize, comparator);
 
 		while(q.size() < originalSize) {
 			q.add(vectors.poll());
@@ -170,23 +186,32 @@ class Population {
 
 		vectors = q;
 		offspringProduced = 0;
+		purgeClock.clock();
 	}
 	
 	/**
 	 * Returns the fitness of the best vector in this current population
 	 */
-	public int getFittest() {
-		Vector v = vectors.peek();
+	public double getFittest() {
+		WeightVector v = vectors.peek();
 		System.out.print(Arrays.toString(v.weights) + ", fitness: " + v.fitness + "\n");
-//		writer.print(Arrays.toString(v.weights) + ", fitness: " + v.fitness + "\n");
 		return v.fitness;
+	}
+	
+	/**
+	 * Prints the accumulated time of purge(), samplePopulation() and (crossing and creating a new vector)
+	 */
+	public void profile() {
+		System.out.println("Sample total elapsed: " + sampleClock.getElapsedTime() + "ms");
+		System.out.println("Purge total elapsed: " + purgeClock.getElapsedTime() + "ms");
+		System.out.println("Crossing total elapsed: " + crossClock.getElapsedTime() + "ms");
 	}
 }
 
-class Vector {
+class WeightVector {
 	public static final int HEURISTICS = 4; 
 	public double[] weights;
-	public int fitness;
+	public double fitness;
 	
 	public static final double randomMin = -1;
 	public static final double randomMax = 1;
@@ -194,7 +219,7 @@ class Vector {
 	/**
 	 * Generates a vector with random weights
 	 */
-	public Vector() {
+	public WeightVector() {
 		weights = new double[HEURISTICS];
 		for (int i = 0; i < HEURISTICS; i++) {
 			weights[i] = randomMin + (randomMax-randomMin)*Math.random();
@@ -207,7 +232,7 @@ class Vector {
 	/**
 	 * Generates a vector with the specified weights
 	 */
-	public Vector(double[] w) {
+	public WeightVector(double[] w) {
 		weights = new double[HEURISTICS];
 		for (int i = 0; i < HEURISTICS; i++) {
 			weights[i] = w[i];
@@ -221,8 +246,33 @@ class Vector {
 	 * Plays the game and sets the score to the fitness
 	 */
 	public void calculateFitness() {
+		int numGames = 10;
 		PlayerSkeleton p = new PlayerSkeleton(weights);
-		fitness = p.playGame();
+		Vector<Integer> scores = new Vector<>();
+		CountDownLatch completionSignal = new CountDownLatch(numGames);
+//		StopWatch sw = new StopWatch();
+//		sw.start();
+		
+		try {
+			for (int i = 0; i < numGames; i++) {
+				Thread t = new Thread(new GameRunner(completionSignal, scores, p));
+				t.start();
+			}
+			
+			// Wait for all threads to complete.
+			completionSignal.await();
+		} catch (Exception e) {
+			System.out.println("Thread Interrupted");
+		}
+		
+		Integer[] s = new Integer[numGames];
+		double total = 0;
+		scores.toArray(s);
+		for (int i = 0; i < numGames; i++) {
+			total += s[i];
+		}
+		
+		this.fitness = total/numGames;
 	}
 	
 	public static final double mutationThreshold = 0.2;
@@ -260,3 +310,63 @@ class Vector {
 		}
 	}
 }
+
+class GameRunner implements Runnable {
+	// Require thread-safe list
+	private Vector<Integer> scores;
+	private PlayerSkeleton player;
+	private CountDownLatch doneSignal;
+	
+	public GameRunner(CountDownLatch doneSignal, Vector<Integer> scores, PlayerSkeleton player) {
+		this.doneSignal = doneSignal;
+		this.scores = scores;
+		this.player = player;
+	}
+	
+	// Plays the game and adds the score to scores.
+	public void run() {
+		int score = player.playGame();
+		scores.add(score);
+		doneSignal.countDown();
+	}
+}
+
+/**
+ * Simple stopwatch class
+ * @author tanzh
+ *
+ */
+class StopWatch {
+	long startTime;
+	long elapsedTime;
+	
+	public StopWatch() {
+		startTime = 0;
+		elapsedTime = 0;
+	}
+	
+	public void start() {
+		startTime = System.nanoTime();
+	}
+	
+	public void reset() {
+		elapsedTime = 0;
+	}
+	
+	// Used for simple start-stop functionality.
+	// Returns the time elapsed in ms.
+	public long getTime() {
+		return (System.nanoTime() - startTime)/1000000;
+	}
+	
+	// Keeps track of the accumulated time.
+	public void clock() {
+		elapsedTime += System.nanoTime() - startTime;
+	}
+	
+	// Gets the time elapsed
+	public long getElapsedTime() {
+		return elapsedTime/1000000;
+	}
+}
+
