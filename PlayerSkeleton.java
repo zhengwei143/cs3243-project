@@ -304,9 +304,9 @@ class Node {
 
 	//Must call simulateMove before calling this method
 	public void calculateScore(int rowsCleared) {
-		int bumpiness = bumpinessHeuristic(originalField);
+		int bumpiness = bumpinessHeuristic(originalTop);
 		int completeLines = rowsCleared;
-		int aggregateHeight = aggregateHeightHeuristic(originalField);
+		int aggregateHeight = aggregateHeightHeuristic(originalTop);
 		int holes = holesHeuristic(originalField);
 		int wellSum = wellSumHeuristic(originalTop);
 		int blockades = blockadeHeuristic(originalField);
@@ -317,12 +317,11 @@ class Node {
 		}
 	}
 
-	public int aggregateHeightHeuristic(int[][] field) {
+	public int aggregateHeightHeuristic(int[] top) {
 		int aggregateHeight = 0;
-		int[] heights = getColumnHeights(field);
 
-		for(int i=0; i<heights.length; i++) {
-			aggregateHeight += heights[i];
+		for(int i=0; i<COLS; i++) {
+			aggregateHeight += top[i];
 		}
 
 		return aggregateHeight;
@@ -348,29 +347,27 @@ class Node {
 		return numHoles;
 	}
 
-	public int bumpinessHeuristic(int[][] field){
+	public int bumpinessHeuristic(int[] top){
 		int bumpiness = 0;
 		boolean debug = false;
 
-		int[] depths = getColumnHeights(field);
+//		if(debug){
+//			System.out.println("Start Bumpiness Heuristic Printout");
+//			for(int i=0; i<field.length; i++){
+//				for(int j=0; j<field[i].length; j++){
+//					System.out.print(field[i][j]);
+//				}
+//				System.out.println();
+//			}
+//			System.out.println("End Bumpiness Heuristic Printout");
+//
+//
+//			System.out.println("Start Depth Score Printout");
+//		}
 
-		if(debug){
-			System.out.println("Start Bumpiness Heuristic Printout");
-			for(int i=0; i<field.length; i++){
-				for(int j=0; j<field[i].length; j++){
-					System.out.print(field[i][j]);
-				}
-				System.out.println();
-			}
-			System.out.println("End Bumpiness Heuristic Printout");
-
-
-			System.out.println("Start Depth Score Printout");
-		}
-
-		for(int i=0; i<depths.length - 1; i++){
+		for(int i=0; i<COLS - 1; i++){
 			//System.out.print(depths[i] + " ");
-			bumpiness += Math.abs(depths[i] - depths[i+1]);
+			bumpiness += Math.abs(top[i] - top[i+1]);
 		}
 //		if(debug){
 //			System.out.println("Bumpiness is " + bumpiness);
