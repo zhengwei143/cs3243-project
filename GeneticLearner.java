@@ -123,6 +123,7 @@ class Population {
 		}
 
 		WeightVector v = new WeightVector(newWeights);
+		v.normalize();
 		crossClock.clock();
 //		System.out.println("crossover: " + Arrays.toString(v.weights) + ", fitness: " + v.fitness);
 		addOffspring(v);

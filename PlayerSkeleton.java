@@ -386,18 +386,15 @@ class Node {
 				if (top[j] < top[j+1]) {
 					int wellHeight = top[j+1] - top[j];
 					wellSum += wellHeight * (wellHeight+1) / 2;
-					break;
 				}
 			} else if (j == COLS-1) {
 				if (top[j] < top[j-1]) {
 					int wellHeight = top[j-1] - top[j];
 					wellSum += wellHeight * (wellHeight+1) / 2;
-					break;
 				}
 			} else if (top[j] < top[j-1] && top[j] < top[j+1]) {
 				int wellHeight = Math.min(top[j-1], top[j+1]) - top[j];
 				wellSum += wellHeight * (wellHeight+1) / 2;
-				break;
 			}
 		}
 		return wellSum;
