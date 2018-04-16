@@ -53,7 +53,7 @@ public class GeneticLearner {
 }
 
 class Population {
-	public static final int HEURISTICS = 4;
+	public static final int HEURISTICS = 6;
 	public int originalSize;
 	public int offspringProduced;
 	public PriorityQueue<WeightVector> vectors;
@@ -209,7 +209,7 @@ class Population {
 }
 
 class WeightVector {
-	public static final int HEURISTICS = 4; 
+	public static final int HEURISTICS = 6;
 	public double[] weights;
 	public double fitness;
 	

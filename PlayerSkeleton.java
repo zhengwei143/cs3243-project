@@ -308,8 +308,10 @@ class Node {
 		int completeLines = rowsCleared;
 		int aggregateHeight = aggregateHeightHeuristic(originalField);
 		int holes = holesHeuristic(originalField);
+		int wellSum = wellSumHeuristic(originalTop);
+		int blockades = blockadeHeuristic(originalField);
 		if (!gameEnded) {
-			score = heuristicWeights[0] * completeLines + heuristicWeights[1] * aggregateHeight + heuristicWeights[2] * bumpiness + heuristicWeights[3] * holes;
+			score = heuristicWeights[0] * completeLines + heuristicWeights[1] * aggregateHeight + heuristicWeights[2] * bumpiness + heuristicWeights[3] * holes + heuristicWeights[4] * wellSum + heuristicWeights[5] * blockades;
 		} else {
 			score = Integer.MIN_VALUE;
 		}
@@ -376,6 +378,54 @@ class Node {
 //		}
 
 		return bumpiness;
+	}
+
+	// sum of all well heights
+	public int wellSumHeuristic(int[] top) {
+		int wellSum = 0;
+
+		for(int j = 0; j < COLS; j++) {
+			if (j == 0) {
+				if (top[j] < top[j+1]) {
+					int wellHeight = top[j+1] - top[j];
+					wellSum += wellHeight * (wellHeight+1) / 2;
+					break;
+				}
+			} else if (j == COLS-1) {
+				if (top[j] < top[j-1]) {
+					int wellHeight = top[j-1] - top[j];
+					wellSum += wellHeight * (wellHeight+1) / 2;
+					break;
+				}
+			} else if (top[j] < top[j-1] && top[j] < top[j+1]) {
+				int wellHeight = Math.min(top[j-1], top[j+1]) - top[j];
+				wellSum += wellHeight * (wellHeight+1) / 2;
+				break;
+			}
+		}
+		return wellSum;
+	}
+
+	public int blockadeHeuristic(int[][] field) {
+		int maxHeight = field.length;
+		int maxCol = field[0].length;
+		int numBlockades = 0;
+
+		for (int j = 0; j < maxCol; j++) {
+			boolean countingBlockades = false;
+			for (int i = 0; i < maxHeight; i++) {
+				if (countingBlockades) {
+					if (field[i][j] != 0) {
+						numBlockades++;
+					}
+				} else {
+					if (field[i][j] == 0) {
+						countingBlockades = true;
+					}
+				}
+			}
+		}
+		return numBlockades;
 	}
 
 	//returns an int array of column heights from column 0 to column 9, left to right
