@@ -407,13 +407,11 @@ class Node {
 	}
 
 	public int blockadeHeuristic(int[][] field) {
-		int maxHeight = field.length;
-		int maxCol = field[0].length;
 		int numBlockades = 0;
 
-		for (int j = 0; j < maxCol; j++) {
+		for (int j = 0; j < COLS; j++) {
 			boolean countingBlockades = false;
-			for (int i = 0; i < maxHeight; i++) {
+			for (int i = 0; i < ROWS; i++) {
 				if (countingBlockades) {
 					if (field[i][j] != 0) {
 						numBlockades++;
