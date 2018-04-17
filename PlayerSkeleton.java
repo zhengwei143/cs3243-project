@@ -419,6 +419,26 @@ class Node {
 		}
 		return numBlockades;
 	}
+	
+	// @author Janik
+	public int blockadesHeuristic(int[][] field,int[] height) {
+		int blockades=0;
+		boolean sum=false;
+		for (int col=0;col<height.length;col++) {
+			sum=false;
+			for(int row=0;row<height[col];row++) {
+				if(field[row][col]==1) {
+					sum=true;
+				}
+				
+				if(sum) {
+					blockades+=field[row][col];
+				}
+			}
+		}
+		
+		return blockades;
+	}
 
 	//returns an int array of column heights from column 0 to column 9, left to right
 	public int[] getColumnHeights(int[][] field) {
