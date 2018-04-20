@@ -7,7 +7,7 @@ public class GeneticLearner {
 		int initialSize = 1000;
 		double cutoff = 0.3;
 		int numGenerations = 0;
-		int cutoffGenerations = 200;
+		int cutoffGenerations = Integer.MAX_VALUE;
 		
 		StopWatch sw = new StopWatch();
 		
@@ -53,7 +53,7 @@ public class GeneticLearner {
 }
 
 class Population {
-	public static final int HEURISTICS = 6;
+	public static final int HEURISTICS = 5;
 	public int originalSize;
 	public int offspringProduced;
 	public PriorityQueue<WeightVector> vectors;
@@ -124,7 +124,6 @@ class Population {
 
 		WeightVector v = new WeightVector(newWeights);
 		crossClock.clock();
-//		System.out.println("crossover: " + Arrays.toString(v.weights) + ", fitness: " + v.fitness);
 		addOffspring(v);
 	}
 	
@@ -209,7 +208,7 @@ class Population {
 }
 
 class WeightVector {
-	public static final int HEURISTICS = 6;
+	public static final int HEURISTICS = 5;
 	public double[] weights;
 	public double fitness;
 	
@@ -251,8 +250,6 @@ class WeightVector {
 		PlayerSkeleton p = new PlayerSkeleton(weights);
 		Vector<Integer> scores = new Vector<>();
 		CountDownLatch completionSignal = new CountDownLatch(numGames);
-//		StopWatch sw = new StopWatch();
-//		sw.start();
 		
 		try {
 			for (int i = 0; i < numGames; i++) {

@@ -112,24 +112,14 @@ public class PlayerSkeleton {
 			}
 		}
 
-//		System.out.println("Best Move: " + Arrays.toString(legalMoves[bestDepthOneMove]));
-//		System.out.println("Best Score: " + bestAvg);
-
 		return bestDepthOneMove;
 	}
 
 	public static void main(String[] args) {
 		State s = new State();
 //		new TFrame(s);
-		PlayerSkeleton p = new PlayerSkeleton(new double[]{0.760666, -0.510066, -0.184483, -0.35663});
-		int turnCount = 0;
+		PlayerSkeleton p = new PlayerSkeleton(new double[]{0.1636736030816534, -0.11117594223369093, -0.20390418721234355, -0.9501423421384158, -0.12846584618379997});
 		while(!s.hasLost()) {
-			System.out.println("Hello turn num " + turnCount);
-			turnCount++;
-//			int[][] legalMoves = s.legalMoves();
-//			for (int i = 0; i < legalMoves.length; i++) {
-//				System.out.println(Arrays.toString(legalMoves[i]));
-//			}
 			s.makeMove(p.pickMove(s,s.legalMoves()));
 //			s.draw();
 //			s.drawNext(0,0);
@@ -150,7 +140,6 @@ public class PlayerSkeleton {
 		while(!s.hasLost()) {
 			s.makeMove(pickMove(s, s.legalMoves()));
 		}
-//		System.out.println("Game completed: " + s.getRowsCleared());
 		return s.getRowsCleared();
 	}
 }
@@ -309,9 +298,8 @@ class Node {
 		int aggregateHeight = aggregateHeightHeuristic(originalTop);
 		int holes = holesHeuristic(originalField);
 		int wellSum = wellSumHeuristic(originalTop);
-		int blockades = blockadeHeuristic(originalField);
 		if (!gameEnded) {
-			score = heuristicWeights[0] * completeLines + heuristicWeights[1] * aggregateHeight + heuristicWeights[2] * bumpiness + heuristicWeights[3] * holes + heuristicWeights[4] * wellSum + heuristicWeights[5] * blockades;
+			score = heuristicWeights[0] * completeLines + heuristicWeights[1] * aggregateHeight + heuristicWeights[2] * bumpiness + heuristicWeights[3] * holes + heuristicWeights[4] * wellSum;
 		} else {
 			score = Integer.MIN_VALUE;
 		}
@@ -349,30 +337,11 @@ class Node {
 
 	public int bumpinessHeuristic(int[] top){
 		int bumpiness = 0;
-		boolean debug = false;
-
-//		if(debug){
-//			System.out.println("Start Bumpiness Heuristic Printout");
-//			for(int i=0; i<field.length; i++){
-//				for(int j=0; j<field[i].length; j++){
-//					System.out.print(field[i][j]);
-//				}
-//				System.out.println();
-//			}
-//			System.out.println("End Bumpiness Heuristic Printout");
-//
-//
-//			System.out.println("Start Depth Score Printout");
-//		}
 
 		for(int i=0; i<COLS - 1; i++){
 			//System.out.print(depths[i] + " ");
 			bumpiness += Math.abs(top[i] - top[i+1]);
 		}
-//		if(debug){
-//			System.out.println("Bumpiness is " + bumpiness);
-//			System.out.println("End Depth Score Printout");
-//		}
 
 		return bumpiness;
 	}
@@ -400,6 +369,7 @@ class Node {
 		return wellSum;
 	}
 
+	//unused
 	public int blockadeHeuristic(int[][] field) {
 		int numBlockades = 0;
 
@@ -418,24 +388,6 @@ class Node {
 			}
 		}
 		return numBlockades;
-	}
-
-	//returns an int array of column heights from column 0 to column 9, left to right
-	public int[] getColumnHeights(int[][] field) {
-		int[] heights = new int[field[0].length];
-		int maxHeight = field.length;
-
-		//if field[i][j] is not 0 then it is empty, else it is occupied by a block
-		for(int j=0; j<field[j].length; j++) {
-			for(int i=maxHeight; i>0; i--) {
-				if(field[i-1][j] != 0) {
-					heights[j] = i;
-					break;
-				}
-			}
-		}
-
-		return heights;
 	}
 
 	public double getScore() {
