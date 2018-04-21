@@ -1,5 +1,3 @@
-import java.util.Arrays;
-
 public class PlayerSkeleton {
 	public static final int COLS = 10;
 	public static final int ROWS = 21;
@@ -8,7 +6,7 @@ public class PlayerSkeleton {
 	public static final int ORIENT = 0;
 	public static final int SLOT = 1;
 
-	//completeLines, aggregateHeight, bumpiness, holes
+	//completeLines, aggregateHeight, bumpiness, holes, wellSum
 	public double[] heuristicWeights;
 
 	//possible orientations for a given piece type
@@ -71,7 +69,6 @@ public class PlayerSkeleton {
 	 * after the legal move is played.
 	 * Optimal score for each piece is obtained by exhaustively searching every orient and position.
 	 * Returns the move corresponding to the best average score among legal moves.
-	 * ref: http://www.diva-portal.org/smash/get/diva2:815662/FULLTEXT01.pdf
 	 * @param s state to apply depth-2 search on
 	 * @param legalMoves of the nextPiece
 	 * @param nextPiece integer representing the next piece
@@ -128,9 +125,7 @@ public class PlayerSkeleton {
 //			} catch (InterruptedException e) {
 //				e.printStackTrace();
 //			}
-			System.out.println("You have completed "+s.getRowsCleared()+" rows.");
 		}
-		System.out.println("Has lost: " + s.hasLost());
 		System.out.println("You have completed "+s.getRowsCleared()+" rows.");
 	}
 
