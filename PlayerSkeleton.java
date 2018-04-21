@@ -69,6 +69,8 @@ public class PlayerSkeleton {
 	 * after the legal move is played.
 	 * Optimal score for each piece is obtained by exhaustively searching every orient and position.
 	 * Returns the move corresponding to the best average score among legal moves.
+	 * @author laichengyu
+	 * 
 	 * @param s state to apply depth-2 search on
 	 * @param legalMoves of the nextPiece
 	 * @param nextPiece integer representing the next piece

@@ -1,6 +1,9 @@
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 
+/**
+ * This is the code for our Genetic Algorithm. This file is not necessary to run PlayerSkeleton.java.
+ */
 public class GeneticLearner {
 	
 	public static void main(String[] args) {
